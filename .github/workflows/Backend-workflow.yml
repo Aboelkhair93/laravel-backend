@@ -1,0 +1,50 @@
+name: Build and Push Docker Image
+
+on:
+  push:
+    branches:
+      - 10.x
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout Repository
+      uses: actions/checkout@v2
+
+    - name: Set up QEMU
+      uses: docker/setup-qemu-action@v2
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v1
+
+    - name: Build Docker Image
+      run: |
+        docker build -t laravel-img:latest -f ./Dockerfile .
+    
+    - name: Authenticate with ECR
+      run: |
+        aws ecr get-login-password --region ${{ secrets.AWS_REGION }} | docker login --username AWS --password-stdin ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com
+
+    - name: Tag Docker Image for ECR
+      run: |
+        docker tag laravel-img:latest ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/laravel-img:latest
+
+    - name: Push Docker Image to ECR
+      run: |
+        docker push ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/laravel-img:latest
+
+    - name: Save Private Key
+      run: echo "${{ secrets.EC2_PRIVATE_KEY }}" > private_key.pem
+  
+    - name: Set Permissions for Private Key
+      run: chmod 600 private_key.pem 
+
+    - name: Deploy to EC2
+      run: |
+          ssh -o StrictHostKeyChecking=no -i private_key.pem ${{ secrets.EC2_USERNAME }}@${{ secrets.EC2_HOST }} '
+            sudo docker pull laravel-img:latest &&
+            sudo docker stop laravel-app || true &&
+            sudo docker rm laravel-app || true &&
+            sudo docker run -d --restart=always -p 9000:9000 --name laravel-app laravel-img:latest'
