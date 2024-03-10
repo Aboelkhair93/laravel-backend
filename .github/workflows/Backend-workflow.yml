@@ -50,6 +50,7 @@ jobs:
     - name: Deploy to EC2
       run: |
           ssh -o StrictHostKeyChecking=no -i private_key.pem ${{ secrets.EC2_USERNAME }}@${{ secrets.EC2_HOST }} '
+            sudo aws ecr get-login-password --region ${{ secrets.AWS_REGION }} | docker login --username AWS --password-stdin 732373470123.dkr.ecr.us-east-1.amazonaws.com &&
             sudo docker pull 732373470123.dkr.ecr.us-east-1.amazonaws.com/laravel:latest &&
             sudo docker stop laravel-app || true &&
             sudo docker rm laravel-app || true &&
