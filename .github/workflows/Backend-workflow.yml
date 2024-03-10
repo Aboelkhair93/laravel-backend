@@ -27,22 +27,17 @@ jobs:
         aws configure --profile default < aws-credentials
         rm aws-credentials
 
-    - name: Build Docker Image
-      run: |
-        docker build -t laravel-img:latest -f ./Dockerfile .
-    
     - name: Authenticate with ECR
-      run: |
-        aws ecr get-login-password --region ${{ secrets.AWS_REGION }} | docker login --username AWS --password-stdin ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com
+      run: aws ecr get-login-password --region ${{ secrets.AWS_REGION }} | docker login --username AWS --password-stdin 732373470123.dkr.ecr.us-east-1.amazonaws.com
         
+    - name: Build Docker Image
+      run: docker build -t laravel-img:latest -f ./Dockerfile .
         
     - name: Tag Docker Image for ECR
-      run: |
-        docker tag laravel-img:latest ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/laravel/laravel-img:latest
+      run: docker tag laravel-img:latest 732373470123.dkr.ecr.us-east-1.amazonaws.com/laravel:latest
 
     - name: Push Docker Image to ECR
-      run: |
-        docker push ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/laravel/laravel-img:latest
+      run: docker push 732373470123.dkr.ecr.us-east-1.amazonaws.com/laravel:latest
 
     - name: Save Private Key
       run: echo "${{ secrets.EC2_PRIVATE_KEY }}" > private_key.pem
@@ -53,7 +48,7 @@ jobs:
     - name: Deploy to EC2
       run: |
           ssh -o StrictHostKeyChecking=no -i private_key.pem ${{ secrets.EC2_USERNAME }}@${{ secrets.EC2_HOST }} '
-            sudo docker pull laravel-img:latest &&
+            sudo docker pull 732373470123.dkr.ecr.us-east-1.amazonaws.com/laravel:latest &&
             sudo docker stop laravel-app || true &&
             sudo docker rm laravel-app || true &&
-            sudo docker run -d --restart=always -p 9000:9000 --name laravel-app laravel-img:latest'
+            sudo docker run -d --restart=always -p 9000:9000 --name laravel-app 732373470123.dkr.ecr.us-east-1.amazonaws.com/laravel:latest'
