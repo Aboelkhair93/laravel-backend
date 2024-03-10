@@ -21,9 +21,9 @@ jobs:
 
     - name: Configure AWS Credentials
       run: |
-        export AWS_ACCESS_KEY_ID=${{ secrets.AWS_ACCESS_KEY_ID }}
-        export AWS_SECRET_ACCESS_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        export AWS_DEFAULT_REGION=${{ secrets.AWS_REGION }}
+        aws configure set aws_access_key_id ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws configure set aws_secret_access_key ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws configure set region ${{ secrets.AWS_REGION }}
 
     - name: Create ECR Login Token
       id: ecr-login
@@ -50,7 +50,9 @@ jobs:
     - name: Deploy to EC2
       run: |
           ssh -o StrictHostKeyChecking=no -i private_key.pem ${{ secrets.EC2_USERNAME }}@${{ secrets.EC2_HOST }} '
-            sudo aws ecr get-login-password --region ${{ secrets.AWS_REGION }} | docker login --username AWS --password-stdin 732373470123.dkr.ecr.us-east-1.amazonaws.com &&
+            aws configure set aws_access_key_id ${{ secrets.AWS_ACCESS_KEY_ID }}
+            aws configure set aws_secret_access_key ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+            aws configure set region ${{ secrets.AWS_REGION }} &&
             sudo docker pull 732373470123.dkr.ecr.us-east-1.amazonaws.com/laravel:latest &&
             sudo docker stop laravel-app || true &&
             sudo docker rm laravel-app || true &&
