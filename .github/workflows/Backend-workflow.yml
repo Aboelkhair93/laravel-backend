@@ -47,6 +47,7 @@ jobs:
     - name: Set Permissions for Private Key
       run: chmod 600 private_key.pem 
 
+      
     - name: Deploy to EC2
       run: |
          ssh -o StrictHostKeyChecking=no -i private_key.pem ${{ secrets.EC2_USERNAME }}@${{ secrets.EC2_HOST }} '
